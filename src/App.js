@@ -1,27 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { TranscriptionProvider } from './context/TranscriptionContext';
+import Layout from './components/Layout';
+import Home from './pages/Home';
+import Transcription from './pages/Transcription';
+import History from './pages/History';
+import Settings from './pages/Settings';
+import { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 import './App.css';
 
 function App() {
-  const [text, setText] = useState('');
+  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    // Connexion au backend Socket.io
-    const socket = io('https://logoscribe-backend-production.up.railway.app', {
+    const socket = io('https://logoscribe-backend.onrender.com', {
       transports: ['websocket'],
     });
 
     socket.on('connect', () => {
+      setConnected(true);
       console.log('✅ Connecté au serveur Socket.io');
     });
 
-    socket.on('transcription', (data) => {
-      console.log('📝 Nouveau texte:', data);
-      setText(data);
-    });
-
     socket.on('disconnect', () => {
-      console.log('❌ Déconnecté du serveur');
+      setConnected(false);
+      console.log('❌ Déconnecté du serveur Socket.io');
     });
 
     return () => {
@@ -30,14 +33,18 @@ function App() {
   }, []);
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>📝 LogoScribe Live</h1>
-        <p style={{ fontSize: '1.5rem', maxWidth: '90%', marginTop: '1rem' }}>
-          {text || "En attente de transcription..."}
-        </p>
-      </header>
-    </div>
+    <TranscriptionProvider>
+      <Router>
+        <Layout connected={connected}>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/transcription" element={<Transcription />} />
+            <Route path="/historique" element={<History />} />
+            <Route path="/parametres" element={<Settings />} />
+          </Routes>
+        </Layout>
+      </Router>
+    </TranscriptionProvider>
   );
 }
 
